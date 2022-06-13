@@ -1,8 +1,10 @@
 import useSWR from 'swr';
 import React, { useEffect, useMemo, useState } from 'react';
-import { collection, doc, onSnapshot, query, setDoc } from 'firebase/firestore';
+import { collection, CollectionReference, doc, onSnapshot, query, setDoc } from 'firebase/firestore';
 import {
   addHours,
+  addMinutes,
+  areIntervalsOverlapping,
   differenceInHours,
   differenceInMinutes,
   endOfHour,
@@ -23,10 +25,32 @@ const auth = getAuth();
 async function fetcher() {
   const response = await fetch('/api/performances');
 
-  return response.json();
+  const data = await response.json();
+
+  return data.map((performance) => {
+    const start = parseISO(performance.start);
+    const end = parseISO(performance.end);
+    const minutes = differenceInMinutes(end, start);
+    const blocks = minutes / 15;
+
+    return {
+      ...performance,
+      start,
+      end,
+      minutes,
+      blocks,
+    };
+  })
 }
 
-const c = collection(db, 'users')
+interface IUser {
+  id: string;
+  choices?: string[];
+  photoURL: string;
+  displayName: string;
+}
+
+const c = collection(db, 'users') as CollectionReference<IUser>
 
 const HOUR_WIDTH = 240;
 const BLOCK_WIDTH = HOUR_WIDTH / 4;
@@ -47,12 +71,33 @@ export function Home() {
   });
 
   const [filter, setFilter] = useState<string>('');
-  const [user, setUser] = useState<User>(undefined);
-  const [users, setUsers] = useState([]);
+  const [authUser, setAuthUser] = useState<User>(undefined);
+  const [showSelected, setShowSelected] = useState(false);
+  const [users, setUsers] = useState<IUser[]>([]);
+  const user = useMemo(() => users.find(u => u.id === authUser?.uid), [users, authUser])
+  const friends = useMemo(() => {
+    return users.filter(u => u.id !== user?.id);
+  }, [users, user])
 
-  const choices = useMemo(() => {
-    return users.find(u => u.id === user.uid)?.choices ?? []
-  }, [user, users])
+  const [choices, setChoices] = useState([])
+
+  useEffect(() => {
+    if (choices.length) {
+      return;
+    }
+
+    const userChoices = orderBy(user?.choices ?? []);
+
+    setChoices(choices => {
+      if (JSON.stringify(choices) !== JSON.stringify(userChoices)) {
+        return userChoices
+      }
+
+      console.log('same');
+
+      return choices
+    });
+  }, [user?.choices])
 
   async function login() {
     await signInWithRedirect(auth, provider)
@@ -61,11 +106,9 @@ export function Home() {
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUser(
-          user
-        )
+        setAuthUser(user)
       } else {
-        setUser(undefined)
+        setAuthUser(undefined)
       }
     });
   }, []);
@@ -79,26 +122,40 @@ export function Home() {
     })
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      if (!user) {
+        return;
+      }
+
+      console.log('update')
+
+      await setDoc(doc(c, user.id), {
+        photoURL: authUser.photoURL,
+        displayName: authUser.displayName,
+        choices: orderBy(choices)
+      }, {
+        merge: false,
+      })
+    })()
+  }, [choices])
+
   async function onClick(id: string) {
-    if (!user?.uid) {
+    if (!user?.id) {
       await login()
       return;
     }
 
-    const { choices = [] } = users.find(u => u.id === user.uid) ?? {}
-
     const updated = choices.includes(id) ? choices.filter(c => c !== id) : [...choices, id];
 
-    await setDoc(doc(c, user.uid), {
-      photoURL: user.photoURL,
-      displayName: user.displayName,
-      choices: orderBy(updated)
-    }, {
-      merge: false
-    })
+    setChoices(updated);
   }
 
   const [selectedDay, setDay] = useState('FRIDAY');
+
+  const selected = useMemo(() => {
+    return users.map(({ choices }) => choices).flat(Infinity);
+  }, [users])
 
   const {
     first,
@@ -108,24 +165,27 @@ export function Home() {
     blocks,
     stages,
     days,
+    mapped
   } = useMemo(() => {
-    const filtered = performances.filter(({ day, name }) => {
-      return day === selectedDay && (!filter || name.toLowerCase().includes(filter?.toLowerCase()))
-    });
+    const filtered = performances
+      .filter(({ day }) => day === selectedDay)
+      .filter(({ name }) => (!filter || name.toLowerCase().includes(filter?.toLowerCase())))
+      .filter(({ id }) => (!showSelected || selected.includes(id)))
+      .filter(p => p.blocks > 0);
 
-    const first = min(
-      filtered.map(({ start }) => startOfHour(parseISO(start)))
-    );
-
-    const last = max(
-      filtered.map(({ end }) => endOfHour(parseISO(end)))
-    );
+    const first = min(filtered.map(({ start }) => startOfHour(start)));
+    const last = max(filtered.map(({ end }) => endOfHour(end)));
 
     const hours = Math.abs(differenceInHours(first, last)) + 1
     const minutes = Math.abs(differenceInMinutes(first, last)) + 15;
     const blocks = Math.floor(minutes / 15);
 
-    const stages = Object.entries(groupBy(filtered, 'stage'));
+    const mapped = mapPerformances(
+      filtered,
+      first
+    );
+
+    const stages = Object.entries(groupBy(mapped, 'stage'));
 
     const days = Array.from(new Set(performances.map(({ day }) => day)));
 
@@ -135,11 +195,78 @@ export function Home() {
       hours,
       minutes,
       blocks,
+      mapped,
       stages,
       days,
     }
-  }, [selectedDay, performances, filter])
+  }, [selectedDay, performances, filter, showSelected, selected]);
 
+  const friendChoices = useMemo(() => {
+    const friendChoices = friends.map(({ choices }) => choices ?? []).flat(Infinity) as string[];
+
+    return orderBy(mapped.filter(({ id }) => friendChoices.includes(id)), 'start');
+  }, [friends, mapped])
+
+  const activity = useMemo(() => {
+    const choices = user?.choices ?? [];
+    const selected = orderBy(mapped.filter(({ id }) => choices.includes(id)), 'start')
+
+    let current: Date = first;
+
+    const blocks = [];
+
+    let cu = { margin: 0, blocks: 0, type: "" }
+
+    while (current < last) {
+      const next = addMinutes(current, 5);
+
+      const sel = selected.filter(e => areIntervalsOverlapping({
+        start: e.start,
+        end: e.end,
+      }, {
+        start: current,
+        end: next
+      }));
+
+      if (sel.length === 0) {
+        const friends = friendChoices.some(e => areIntervalsOverlapping({
+          start: e.start,
+          end: e.end,
+        }, {
+          start: current,
+          end: next
+        }));
+
+        if (friends) {
+          blocks.push({
+            blocks: 1,
+            type: "friend"
+          })
+        } else {
+          blocks.push({
+            blocks: 1,
+            type: "empty"
+          })
+        }
+      } else if (sel.length === 1) {
+        blocks.push({
+          blocks: 1,
+          type: "populated"
+        })
+      } else if (sel.length > 1) {
+        blocks.push({
+          blocks: 1,
+          type: "clash"
+        })
+      }
+
+      current = next;
+    }
+
+    return {
+      blocks,
+    };
+  }, [mapped, first, last, user?.choices, friendChoices])
 
   return (
     <div>
@@ -158,13 +285,17 @@ export function Home() {
         </div>
 
         <div className="whitespace-nowrap overflow-hidden text-ellipsis">
-          {user?.displayName ?? <button onClick={login}>Login</button>}
+          {user?.displayName?.split(' ')[0] ?? <button onClick={login}>Login</button>}
         </div>
-
       </div>
 
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 justify-between flex">
         <input placeholder="Search..." value={filter} onChange={(event) => setFilter(event.target.value)} />
+
+        <label className="text-sm flex items-center">
+          <input type="checkbox" className="mr-1" onChange={event => setShowSelected(event.target.checked)} />
+          <span>Only show selected</span>
+        </label>
       </div>
 
       {isValidating && (
@@ -197,10 +328,10 @@ export function Home() {
               ))}
             </div>
 
-            <div data-main={true} className="relative overflow-x-scroll ">
+            <div data-main={true} className="relative overflow-x-scroll">
               <div
                 data-header={true}
-                className="divide-x sticky top-0"
+                className="divide-x relative"
                 style={{ width: `${HOUR_WIDTH * hours}px` }}
               >
                 {Array.from(Array(hours)).map((_, index) => (
@@ -218,6 +349,25 @@ export function Home() {
                     </div>
                   </div>
                 ))}
+
+                <div className="absolute bottom-0 h-2 right-0 left-0 flex">
+                  {activity.blocks.map((block, index) => (
+                    <div
+                      key={index}
+                      data-activity={true}
+                      className={classnames("bg-opacity-20 h-2 border-l inline-block", {
+                        'bg-green-400 border-l-green-500': block.type === 'populated',
+                        'border-transparent': block.type === 'empty',
+                        'bg-red-400 border-l-red-500': block.type === 'clash',
+                        'bg-orange-300 border-l-orange-300': block.type === 'friend',
+                      })}
+                      style={{
+                        width: `${BLOCK_WIDTH * block.blocks}px`,
+                        marginLeft: `${BLOCK_WIDTH * block.margin}px`
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
 
               <div className="relative">
@@ -236,62 +386,64 @@ export function Home() {
                 </div>
 
                 {stages.map(([stage, performances]: [string, any[]]) => {
-                  const mapped = mapPerformances(
-                    performances,
-                    first,
-                    last
-                  );
-
                   return (
                     <div key={stage} className="h-12 relative">
-                      {mapped.map((performance, index) => (
-                        <div
-                          key={performance.id}
-                          data-name={performance.name}
-                          data-blocks={performance.blocks}
-                          data-minutes={performance.minutes}
-                          className="performance"
-                          style={{
-                            marginLeft: `${
-                              BLOCK_WIDTH * performance.previousBlocks
-                            }px`,
-                            width: `${BLOCK_WIDTH * performance.blocks}px`,
-                          }}
-                          onClick={() => onClick(performance.id)}
-                        >
+                      {performances.map((performance, index) => (
                           <div
-                            className={classnames("performance-pill overflow-hidden", {
-                              selected: choices.includes(performance.id)
-                            })}
+                            key={performance.id}
+                            data-name={performance.name}
+                            data-blocks={performance.blocks}
+                            data-minutes={performance.minutes}
+                            className="performance"
                             style={{
-                              minWidth: `${
-                                BLOCK_WIDTH * performance.blocks
+                              marginLeft: `${
+                                BLOCK_WIDTH * performance.previousBlocks
                               }px`,
+                              width: `${BLOCK_WIDTH * performance.blocks}px`,
                             }}
+                            onClick={() => onClick(performance.id)}
                           >
-                            <div className="whitespace-nowrap overflow-hidden text-ellipsis capitalize">
+                            <div
+                              className={classnames("performance-pill overflow-hidden", {
+                                selected: choices.includes(performance.id)
+                              })}
+                              style={{
+                                minWidth: `${
+                                  BLOCK_WIDTH * performance.blocks
+                                }px`,
+                              }}
+                            >
+                              <div className="whitespace-nowrap overflow-hidden text-ellipsis capitalize pt-0.5">
                               <span className="font-medium">
                                 {performance.name.toLowerCase()}{' '}
                               </span>
-                              <span className="text-xs">
+                                <span className="text-xs">
                                 {format(performance.start, 'H:mm')} -{' '}
-                                {format(performance.end, 'H:mm')}
+                                  {format(performance.end, 'H:mm')}
                               </span>
-                            </div>
-                            <div className="h-3 grid grid-flow-col gap-1 justify-start">
-                              {users.filter(user => user.choices?.includes(performance.id)).map((user, index) => {
-                                return (
-                                  <div key={index} className="rounded-full w-3 h-3 bg-green-300 overflow-hidden">
-                                    {user.photoURL && (
-                                      <img src={user.photoURL} alt={user.displayName.substring(0, 1)} />
-                                    )}
-                                  </div>
-                                )
-                              })}
+                              </div>
+                              <div className="h-3 gap-1 justify-start mt-0.5 mb-1 flex items-center">
+                                <div className="grid grid-flow-col items-center">
+                                  {users.filter(user => user.choices?.includes(performance.id)).map((user, index) => {
+                                    return (
+                                      <div key={index}
+                                           className="rounded-full w-3 h-3 bg-green-300 overflow-hidden -mr-1">
+                                        {user.photoURL && (
+                                          <img src={user.photoURL} alt={user.displayName.substring(0, 1)} />
+                                        )}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+
+                                <div className="ml-1 text-[11px]">
+                                  {users.filter(user => user.choices?.includes(performance.id)).map(({ displayName }) => displayName?.split(' ')[0]).filter(Boolean).join(', ')}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   );
                 })}
@@ -304,46 +456,23 @@ export function Home() {
   );
 }
 
-function mapPerformances(performances: any[], startDate: Date, endDate: Date) {
-  const mapped = performances.map((performance) => {
-    const start = parseISO(performance.start);
-    const end = parseISO(performance.end);
-    const minutes = differenceInMinutes(end, start);
-    const blocks = minutes / 15;
-
-    return {
-      ...performance,
-      start,
-      end,
-      minutes,
-      blocks,
-    };
-  });
-
-  const filtered = mapped.filter((performance) => performance.blocks > 0);
-
-  const ordered = orderBy(filtered, 'start', 'asc');
-
-  const results = ordered.map((performance, index, performances) => {
-    const previous = startDate;
-    const next = performances[index + 1]?.start ?? endDate;
-
-    const previousMinutes = differenceInMinutes(performance.start, previous);
+function mapPerformances(performances: any[], startDate: Date) {
+  return performances.map((performance, index, performances) => {
+    const previousMinutes = differenceInMinutes(performance.start, startDate);
     const previousBlocks = Math.max(previousMinutes / 15, 0);
 
-    const nextMinutes = differenceInMinutes(next, performance.end);
-    const nextBlocks = Math.max(nextMinutes / 15, 0);
 
     return {
       ...performance,
       previousMinutes,
       previousBlocks,
-      nextMinutes,
-      nextBlocks,
     };
   });
+}
 
-  return results;
+function getBlocks(from: Date, to: Date) {
+  const minutes = differenceInMinutes(to, from);
+  return Math.max(minutes / 15, 0);
 }
 
 export default Home;
