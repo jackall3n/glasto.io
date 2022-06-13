@@ -7,7 +7,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Welcome to client!</title>
+        <title>Home | glasto.io</title>
       </Head>
       <main className="app">
         <Component {...pageProps} />

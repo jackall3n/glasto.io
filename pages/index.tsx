@@ -28,12 +28,25 @@ async function fetcher() {
 
 const c = collection(db, 'users')
 
+const HOUR_WIDTH = 240;
+const BLOCK_WIDTH = HOUR_WIDTH / 4;
+
+const DAYS = [
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+  'MONDAY',
+];
+
 export function Home() {
-  const { data: performances = [] } = useSWR('performances', fetcher, {
+  const { data: performances = [], isValidating } = useSWR('performances', fetcher, {
     revalidateOnFocus: false,
     revalidateIfStale: false,
   });
 
+  const [filter, setFilter] = useState<string>('');
   const [user, setUser] = useState<User>(undefined);
   const [users, setUsers] = useState([]);
 
@@ -87,35 +100,46 @@ export function Home() {
 
   const [selectedDay, setDay] = useState('FRIDAY');
 
-  const filtered = performances.filter(({ day }) => day === selectedDay);
+  const {
+    first,
+    last,
+    hours,
+    minutes,
+    blocks,
+    stages,
+    days,
+  } = useMemo(() => {
+    const filtered = performances.filter(({ day, name }) => {
+      return day === selectedDay && (!filter || name.toLowerCase().includes(filter?.toLowerCase()))
+    });
 
-  const firstPerformance = min(
-    filtered.map(({ start }) => startOfHour(parseISO(start)))
-  );
-  const lastPerformance = max(
-    filtered.map(({ end }) => endOfHour(parseISO(end)))
-  );
+    const first = min(
+      filtered.map(({ start }) => startOfHour(parseISO(start)))
+    );
 
-  const stages = Object.entries(groupBy(filtered, 'stage'));
+    const last = max(
+      filtered.map(({ end }) => endOfHour(parseISO(end)))
+    );
 
-  const hours =
-    Math.abs(differenceInHours(firstPerformance, lastPerformance)) + 1;
-  const minutes =
-    Math.abs(differenceInMinutes(firstPerformance, lastPerformance)) + 15;
+    const hours = Math.abs(differenceInHours(first, last)) + 1
+    const minutes = Math.abs(differenceInMinutes(first, last)) + 15;
+    const blocks = Math.floor(minutes / 15);
 
-  const blocks = Math.floor(minutes / 15);
-  const hourWidth = 240;
-  const fiveMinuteWith = hourWidth / 4;
+    const stages = Object.entries(groupBy(filtered, 'stage'));
 
-  const days = Array.from(new Set(performances.map(({ day }) => day)));
-  const DAYS = [
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
-    'MONDAY',
-  ];
+    const days = Array.from(new Set(performances.map(({ day }) => day)));
+
+    return {
+      first,
+      last,
+      hours,
+      minutes,
+      blocks,
+      stages,
+      days,
+    }
+  }, [selectedDay, performances, filter])
+
 
   return (
     <div>
@@ -139,7 +163,15 @@ export function Home() {
 
       </div>
 
-      {Boolean(hours && minutes) && (
+      <div className="px-4 pb-3">
+        <input placeholder="Search..." value={filter} onChange={(event) => setFilter(event.target.value)} />
+      </div>
+
+      {isValidating && (
+        <div className="flex justify-center items-center">Loading...</div>
+      )}
+
+      {!isValidating && Boolean(hours && minutes) && (
         <div className="bg-white overflow-hidden relative">
           <div
             className="grid grid-cols-[100px_1fr] md:grid-cols-[200px_1fr]"
@@ -153,7 +185,7 @@ export function Home() {
               {stages.map(([stage]) => (
                 <div
                   key={stage}
-                  className="h-12 text-xs md:text-base flex items-center px-2"
+                  className="h-12 text-xs md:text-base flex items-center px-2 border-r"
                 >
                   <div
                     key={stage}
@@ -165,24 +197,24 @@ export function Home() {
               ))}
             </div>
 
-            <div data-main={true} className="relative overflow-x-scroll">
+            <div data-main={true} className="relative overflow-x-scroll ">
               <div
                 data-header={true}
                 className="divide-x sticky top-0"
-                style={{ width: `${hourWidth * hours}px` }}
+                style={{ width: `${HOUR_WIDTH * hours}px` }}
               >
                 {Array.from(Array(hours)).map((_, index) => (
                   <div
                     key={index}
                     data-hour={format(
-                      addHours(firstPerformance, index),
+                      addHours(first, index),
                       'haaa'
                     )}
                     className="pl-1 border-b-2 h-8 inline-block"
-                    style={{ width: `${hourWidth}px` }}
+                    style={{ width: `${HOUR_WIDTH}px` }}
                   >
                     <div className="text-sm font-medium">
-                      {format(addHours(firstPerformance, index), 'haaa')}
+                      {format(addHours(first, index), 'haaa')}
                     </div>
                   </div>
                 ))}
@@ -198,7 +230,7 @@ export function Home() {
                         'border-gray-200 border-l border-dashed':
                           index % 4 !== 0,
                       })}
-                      style={{ minWidth: `${fiveMinuteWith}px` }}
+                      style={{ minWidth: `${BLOCK_WIDTH}px` }}
                     />
                   ))}
                 </div>
@@ -206,8 +238,8 @@ export function Home() {
                 {stages.map(([stage, performances]: [string, any[]]) => {
                   const mapped = mapPerformances(
                     performances,
-                    firstPerformance,
-                    lastPerformance
+                    first,
+                    last
                   );
 
                   return (
@@ -221,9 +253,9 @@ export function Home() {
                           className="performance"
                           style={{
                             marginLeft: `${
-                              fiveMinuteWith * performance.previousBlocks
+                              BLOCK_WIDTH * performance.previousBlocks
                             }px`,
-                            width: `${fiveMinuteWith * performance.blocks}px`,
+                            width: `${BLOCK_WIDTH * performance.blocks}px`,
                           }}
                           onClick={() => onClick(performance.id)}
                         >
@@ -233,7 +265,7 @@ export function Home() {
                             })}
                             style={{
                               minWidth: `${
-                                fiveMinuteWith * performance.blocks
+                                BLOCK_WIDTH * performance.blocks
                               }px`,
                             }}
                           >
