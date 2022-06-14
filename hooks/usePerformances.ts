@@ -1,54 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
-import { collection, CollectionReference, DocumentReference, onSnapshot, query } from "firebase/firestore";
-import { pullAt } from "lodash";
-import { db } from "../firebase/firestore";
+import { differenceInMinutes, parseISO } from "date-fns";
+import useSWR from "swr";
+import { IPerformance } from "../types/performance";
 
-type Base<T> = {
-  id: string;
-  ref: DocumentReference<T>
+async function fetcher() {
+  const response = await fetch('/api/performances');
+
+  const data = await response.json();
+
+  return data.map((performance) => {
+    const start = parseISO(performance.start);
+    const end = parseISO(performance.end);
+    const minutes = differenceInMinutes(end, start);
+    const blocks = minutes / 15;
+
+    return {
+      ...performance,
+      start,
+      end,
+      minutes,
+      blocks,
+    };
+  })
 }
-type TDecorated<T> = T & Base<T>;
 
-export function useCollection<T>(name: string) {
-  const [data, setData] = useState<TDecorated<T>[]>([]);
+export function usePerformances() {
+  const { data: performances = [], isValidating } = useSWR<IPerformance[]>('performances', fetcher, {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+  });
 
-  const col = useMemo(() => collection(db, name) as CollectionReference<T>, [name]);
-
-  useEffect(() => {
-    return onSnapshot(query(col), snapshot => {
-      setData(data => {
-        const updated = [...data];
-
-        for (const change of snapshot.docChanges()) {
-          const index = updated.findIndex(({ id }) => id === change.doc.id);
-
-          switch (change.type) {
-            case "modified":
-            case "added": {
-              const datum = {
-                id: change.doc.id,
-                ref: change.doc.ref,
-                ...change.doc.data()
-              }
-
-              if (index === -1) {
-                updated.push(datum);
-              } else {
-                updated[index] = datum;
-              }
-
-              break;
-            }
-            case "removed": {
-              pullAt(updated, index);
-            }
-          }
-        }
-
-        return updated;
-      })
-    })
-  }, [col])
-
-  return [data, col] as const;
+  return [performances, isValidating] as const;
 }

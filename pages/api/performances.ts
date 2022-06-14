@@ -1,6 +1,7 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
 import { addDays, format, parse, setHours, setMinutes } from 'date-fns';
+import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 import { uniqBy } from "lodash";
 
 const startDate = parse('2022-06-22', 'yyyy-MM-dd', new Date());
@@ -66,7 +67,9 @@ export default async function performances(request, response) {
               Number(hour)
             );
 
-            return timeDate < date ? addDays(timeDate, 1) : timeDate;
+            const result =  timeDate < date ? addDays(timeDate, 1) : timeDate;
+
+            return zonedTimeToUtc(result, 'Europe/London')
           }
 
           const link = $('a', description)?.attr('href');
