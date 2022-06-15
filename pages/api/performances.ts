@@ -1,8 +1,10 @@
 import axios from 'axios';
 import cheerio from 'cheerio';
-import { addDays, format, parse, setHours, setMinutes } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { addDays, addHours, differenceInMilliseconds, parse, setHours, setMinutes } from 'date-fns';
+import { zonedTimeToUtc } from 'date-fns-tz';
 import { uniqBy } from "lodash";
+
+import cache from 'memory-cache';
 
 const startDate = parse('2022-06-22', 'yyyy-MM-dd', new Date());
 
@@ -16,6 +18,15 @@ const DAYS = [
 ];
 
 export default async function performances(request, response) {
+  const cached = cache.get('performances');
+
+  if (cached) {
+    console.log("cached")
+    return response.json(cached);
+  }
+
+  console.log("uncached")
+
   const { data } = await axios.get(
     'https://www.glastonburyfestivals.co.uk/line-up/line-up-2022'
   );
@@ -51,7 +62,7 @@ export default async function performances(request, response) {
           }
 
           const [description, schedule] = Array.from(columns);
-          const [start, end] = $(schedule).text().split('-');
+          const [start, end] = $(schedule).text().split('-').map(t => t?.trim());
 
           if (!start) {
             return;
@@ -67,7 +78,7 @@ export default async function performances(request, response) {
               Number(hour)
             );
 
-            const result =  timeDate < date ? addDays(timeDate, 1) : timeDate;
+            const result = timeDate < date ? addDays(timeDate, 1) : timeDate;
 
             return zonedTimeToUtc(result, 'Europe/London')
           }
@@ -78,7 +89,7 @@ export default async function performances(request, response) {
 
           const s = getDate(start);
 
-          const id = [day, stage, format(s, 'HH:mm'), name]
+          const id = [day, stage, start, name]
             .join(':')
             .replace(/ /gim, '_');
 
@@ -91,6 +102,7 @@ export default async function performances(request, response) {
             name,
             day,
             link,
+            range: [start, end],
             stage: stage.trim(),
             start: s,
             end: getDate(end),
@@ -100,5 +112,11 @@ export default async function performances(request, response) {
     }
   }
 
-  response.json(uniqBy(performances, 'id'));
+  const result = uniqBy(performances, 'id');
+
+  const timeout = Math.abs(differenceInMilliseconds(new Date(), addHours(new Date(), 6)));
+
+  cache.put('performances', result, timeout)
+
+  response.json(result);
 }

@@ -14,6 +14,8 @@ import {
 } from 'date-fns';
 import { groupBy, orderBy, startCase, uniqBy } from 'lodash';
 import classnames from 'classnames';
+import { IPerformance } from "../types/performance";
+import { IUser } from "../types/user";
 
 const HOUR_WIDTH = 240;
 const BLOCK_WIDTH = HOUR_WIDTH / 4;
@@ -279,7 +281,7 @@ export function CalendarView({ performances, user, users, onClick }) {
                         >
                           <div
                             className={classnames("performance-pill overflow-hidden", {
-                              selected: user?.choices.includes(performance.id)
+                              selected: user?.choices?.includes(performance.id)
                             })}
                             style={{
                               minWidth: `${

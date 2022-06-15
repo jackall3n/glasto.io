@@ -16,6 +16,8 @@ export default function AuthProvider({ children }: PropsWithChildren<Props>) {
 
   useEffect(() => {
     return onAuthStateChanged(auth, user => {
+      console.log('onAuthStateChanged', user);
+
       setUser(user)
     })
   }, [])

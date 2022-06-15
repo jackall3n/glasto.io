@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { collection, CollectionReference, DocumentReference, onSnapshot, query } from "firebase/firestore";
 import { pullAt } from "lodash";
 import { db } from "../firebase/firestore";
+import { QueryConstraint } from "@firebase/firestore";
 
 type Base<T> = {
   id: string;
@@ -9,13 +10,15 @@ type Base<T> = {
 }
 type TDecorated<T> = T & Base<T>;
 
-export function useCollection<T>(name: string) {
+export function useCollection<T>(name: string, where?: QueryConstraint) {
   const [data, setData] = useState<TDecorated<T>[]>([]);
 
   const col = useMemo(() => collection(db, name) as CollectionReference<T>, [name]);
 
   useEffect(() => {
-    return onSnapshot(query(col), snapshot => {
+    const q = where ? query(col, where) : query(col);
+
+    return onSnapshot(q, snapshot => {
       setData(data => {
         const updated = [...data];
 
@@ -48,7 +51,7 @@ export function useCollection<T>(name: string) {
         return updated;
       })
     })
-  }, [col])
+  }, [col, where])
 
   return [data, col] as const;
 }
