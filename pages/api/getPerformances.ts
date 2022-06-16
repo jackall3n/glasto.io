@@ -17,12 +17,12 @@ const DAYS = [
   'MONDAY',
 ];
 
-export async function getPerformances() {
+export default async function performances(request, response) {
   const cached = cache.get('performances');
 
   if (cached) {
     console.log("cached")
-    return cached;
+    return response.json(cached);
   }
 
   console.log("uncached")
@@ -112,17 +112,11 @@ export async function getPerformances() {
     }
   }
 
-  const results = uniqBy(performances, 'id');
+  const result = uniqBy(performances, 'id');
 
   const timeout = Math.abs(differenceInMilliseconds(new Date(), addHours(new Date(), 6)));
 
-  cache.put('performances', results, timeout)
+  cache.put('performances', result, timeout)
 
-  return results;
-}
-
-export default async function performances(request, response) {
-  const results = await getPerformances();
-
-  response.json(results);
+  response.json(result);
 }

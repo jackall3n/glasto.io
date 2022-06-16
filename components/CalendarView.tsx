@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   addHours,
   addMinutes,
@@ -12,10 +12,8 @@ import {
   min,
   startOfHour,
 } from 'date-fns';
-import { groupBy, orderBy, startCase, uniqBy } from 'lodash';
+import { groupBy, orderBy, startCase, uniq } from 'lodash';
 import classnames from 'classnames';
-import { IPerformance } from "../types/performance";
-import { IUser } from "../types/user";
 
 const HOUR_WIDTH = 240;
 const BLOCK_WIDTH = HOUR_WIDTH / 4;
@@ -31,13 +29,13 @@ const DAYS = [
 
 export function CalendarView({ performances, user, users, onClick }) {
   const [filter, setFilter] = useState<string>('');
-  const [showSelected, setShowSelected] = useState(false);
+  const [showFilter, setShowFilter] = useState('ALL');
 
   const friends = useMemo(() => users.filter(u => u.id !== user?.id), [users, user])
 
   const [selectedDay, setDay] = useState('FRIDAY');
 
-  const selected = useMemo(() => uniqBy(users.map(({ choices }) => choices).flat(Infinity)), [users])
+  const selected = useMemo(() => uniq(users.map(({ choices }) => choices).flat(Infinity)), [users])
 
   const {
     first,
@@ -52,7 +50,17 @@ export function CalendarView({ performances, user, users, onClick }) {
     const filtered = performances
       .filter(({ day }) => day === selectedDay)
       .filter(({ name }) => (!filter || name.toLowerCase().includes(filter?.toLowerCase())))
-      .filter(({ id }) => (!showSelected || selected.includes(id)))
+      .filter(({ id }) => {
+        if (showFilter === 'ONLY_MINE') {
+          return user?.choices?.includes(id);
+        }
+
+        if (showFilter === 'ONLY_SELECTED') {
+          return selected.includes(id);
+        }
+
+        return true;
+      })
       .filter(p => p.blocks > 0);
 
     const first = min(filtered.map(({ start }) => startOfHour(start)));
@@ -81,7 +89,7 @@ export function CalendarView({ performances, user, users, onClick }) {
       stages,
       days,
     }
-  }, [selectedDay, performances, filter, showSelected, selected]);
+  }, [selectedDay, performances, filter, showFilter, selected]);
 
   const friendChoices = useMemo(() => {
     const friendChoices = friends.map(({ choices }) => choices ?? []).flat(Infinity) as string[];
@@ -150,14 +158,40 @@ export function CalendarView({ performances, user, users, onClick }) {
     };
   }, [mapped, first, last, user?.choices, friendChoices])
 
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [scroll, setScroll] = useState(0);
+
+  function onScroll(target: any) {
+    const visibleRight = Math.min(target.scrollLeft + target.offsetWidth, target.scrollWidth) + 100
+
+    setScroll(visibleRight);
+  }
+
+  useEffect(() => {
+    onScroll(ref.current)
+  }, [ref.current]);
+
+  function onSetDay(day: string) {
+    // ref.current.scrollTo(0, 0)
+    setDay(day)
+  }
+
   return (
     <>
-      <div className="p-4 justify-between flex">
-        <input placeholder="Search..." value={filter} onChange={(event) => setFilter(event.target.value)} />
-
-        <label className="text-sm flex items-center">
-          <input type="checkbox" className="mr-1" onChange={event => setShowSelected(event.target.checked)} />
-          <span>Only show selected</span>
+      <div className="p-4 justify-between flex items-center">
+        <input placeholder="Search..."
+               className="px-2"
+               value={filter}
+               onChange={(event) => setFilter(event.target.value)}
+        />
+        <label className="text-sm flex items-center rounded-md py-1 flex items-center justify-center">
+          <div className="mr-1.5">Show:</div>
+          <select value={showFilter} className="text-center p-1 font-medium rounded-full bg-gray-100"
+                  onChange={event => setShowFilter(event.target.value)}>
+            <option value="ALL">All</option>
+            <option value="ONLY_MINE">Only mine</option>
+          </select>
         </label>
       </div>
       <div className="grid grid-flow-col gap-2 sm:gap-3 py-2 px-2">
@@ -165,7 +199,7 @@ export function CalendarView({ performances, user, users, onClick }) {
           <button
             key={day}
             className={classnames('btn', { selected: selectedDay === day })}
-            onClick={() => setDay(day)}
+            onClick={() => onSetDay(day)}
           >
             <span className="block sm:hidden">{day.substring(0, 3)}</span>
             <span className="sm:block hidden">{day}</span>
@@ -197,7 +231,9 @@ export function CalendarView({ performances, user, users, onClick }) {
             ))}
           </div>
 
-          <div data-main={true} className="relative overflow-x-scroll">
+          <div data-main={true} className="relative overflow-x-scroll" ref={ref}
+               key={selectedDay}
+               onScroll={(event) => onScroll(event.target)}>
             <div
               data-header={true}
               className="divide-x relative"
@@ -264,71 +300,94 @@ export function CalendarView({ performances, user, users, onClick }) {
               {stages.map(([stage, performances]: [string, any[]]) => {
                 return (
                   <div key={stage} className="h-12 relative">
-                    {performances.map((performance, index) => (
-                        <div
-                          key={performance.id}
-                          data-name={performance.name}
-                          data-blocks={performance.blocks}
-                          data-minutes={performance.minutes}
-                          className="performance"
-                          style={{
-                            marginLeft: `${
-                              BLOCK_WIDTH * performance.previousBlocks
-                            }px`,
-                            width: `${BLOCK_WIDTH * performance.blocks}px`,
-                          }}
-                          onClick={() => onClick(performance.id)}
-                        >
-                          <div
-                            className={classnames("performance-pill overflow-hidden", {
-                              selected: user?.choices?.includes(performance.id)
-                            })}
-                            style={{
-                              minWidth: `${
-                                BLOCK_WIDTH * performance.blocks
-                              }px`,
-                            }}
-                          >
-                            <div className="whitespace-nowrap overflow-hidden text-ellipsis capitalize pt-0.5">
-                              <span className="font-medium">
-                                {performance.name.toLowerCase()}{' '}
-                              </span>
-                              <span className="text-xs">
-                                {format(performance.start, 'H:mm')} -{' '}
-                                {format(performance.end, 'H:mm')}
-                              </span>
-                            </div>
-                            <div className="h-3 gap-1 justify-start mt-0.5 mb-1 flex items-center">
-                              <div className="grid grid-flow-col items-center">
-                                {users.filter(user => user.choices?.includes(performance.id)).map((user, index) => {
-                                  return (
-                                    <div key={index}
-                                         className="rounded-full w-3 h-3 bg-green-300 overflow-hidden -mr-1">
-                                      {user.photoURL && (
-                                        <img src={user.photoURL} alt={user.displayName.substring(0, 1)} />
-                                      )}
-                                    </div>
-                                  )
-                                })}
-                              </div>
+                    {performances.map((performance, index) =>
 
-                              <div className="ml-1 text-[11px]">
-                                {users.filter(user => user.choices?.includes(performance.id)).map(({ displayName }) => displayName?.split(' ')[0]).filter(Boolean).join(', ')}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
+                      <Performance performance={performance} key={performance.id} onClick={onClick} users={users}
+                                   user={user} scroll={scroll} />
                     )}
                   </div>
                 );
               })}
             </div>
           </div>
+
         </div>
       </div>
     </>
   );
+}
+
+function Performance({ performance, onClick, user, users, scroll }) {
+  const marginLeft = BLOCK_WIDTH * performance.previousBlocks;
+  const hide = marginLeft > scroll;
+
+  const [show, setShow] = useState(!hide);
+
+  useEffect(() => {
+    if (show) {
+      return;
+    }
+
+    setTimeout(() => setShow(!hide), 10)
+  }, [hide, show])
+
+  if (hide && !show) {
+    return null;
+  }
+
+  return (
+    <div
+      key={performance.id}
+      data-name={performance.name}
+      data-blocks={performance.blocks}
+      data-minutes={performance.minutes}
+      className={classnames("performance transition ease-in duration-150", { 'opacity-0': !show, 'opacity-100': show })}
+      style={{
+        marginLeft: `${marginLeft}px`,
+        width: `${BLOCK_WIDTH * performance.blocks}px`,
+      }}
+      onClick={() => onClick(performance.id)}
+    >
+      <div
+        className={classnames("performance-pill overflow-hidden", {
+          selected: user?.choices?.includes(performance.id)
+        })}
+        style={{
+          minWidth: `${
+            BLOCK_WIDTH * performance.blocks
+          }px`,
+        }}
+      >
+        <div className="whitespace-nowrap overflow-hidden text-ellipsis capitalize pt-0.5">
+                              <span className="font-medium">
+                                {performance.name.toLowerCase()}{' '}
+                              </span>
+          <span className="text-xs">
+                                {format(performance.start, 'H:mm')} -{' '}
+            {format(performance.end, 'H:mm')}
+                              </span>
+        </div>
+        <div className="h-3 gap-1 justify-start mt-0.5 mb-1 flex items-center">
+          <div className="grid grid-flow-col items-center">
+            {users.filter(user => user.choices?.includes(performance.id)).map((user, index) => {
+              return (
+                <div key={index}
+                     className="rounded-full w-3 h-3 bg-green-300 overflow-hidden -mr-1">
+                  {user.photoURL && (
+                    <img src={user.photoURL} alt={user.displayName.substring(0, 1)} />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="ml-1 text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">
+            {users.filter(user => user.choices?.includes(performance.id)).map(({ displayName }) => displayName?.split(' ')[0]).filter(Boolean).join(', ')}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function mapPerformances(performances: any[], startDate: Date) {

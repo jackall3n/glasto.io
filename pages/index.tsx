@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { setDoc } from 'firebase/firestore';
+import { arrayUnion, setDoc, where } from 'firebase/firestore';
 import { orderBy } from 'lodash';
 import { CalendarIcon, ViewListIcon } from '@heroicons/react/outline';
 import ListView from '../components/ListView';
@@ -8,16 +8,26 @@ import { IUser } from '../types/user';
 import { useCollection } from "../hooks/useCollection";
 import { useAuth } from "../providers/AuthProvider";
 import { usePerformances } from "../hooks/usePerformances";
+import { useDocument } from "../hooks/useDocument";
 
 export function Home() {
   const [authUser, login] = useAuth();
 
   const [performances, isLoading] = usePerformances();
 
-  const [users] = useCollection<IUser>('users');
-  const user = useMemo(() => users.find(u => u.id === authUser?.uid), [users, authUser])
+  const [users] = useCollection<IUser>("users",);
+  const [user, loading, doc, updateUser] = useDocument<IUser>("users", authUser?.uid);
 
   const [view, setView] = useState('CALENDAR')
+
+  useEffect(() => {
+    if (authUser) {
+      updateUser({
+        photoURL: authUser.photoURL,
+        displayName: authUser.displayName,
+      })
+    }
+  }, [authUser]);
 
   const choices = user?.choices ?? []
 
@@ -28,11 +38,9 @@ export function Home() {
     }
 
     const updated = choices.includes(id) ? choices.filter(c => c !== id) : [...choices, id];
-    const ids = performances.filter(({ id }) => updated.includes(id)).map(({ id }) => id)
+    const ids = performances.filter(({ id }) => updated.includes(id)).map(({ id }) => id);
 
-    await setDoc(user.ref, { choices: orderBy(ids) }, {
-      merge: true,
-    })
+    await updateUser({ choices: orderBy(ids) });
   }
 
   return (
@@ -66,9 +74,8 @@ export function Home() {
             </button>
           </div>
 
-          {view === 'CALENDAR' &&
-              <CalendarView user={user} users={users} performances={performances} onClick={onClick} />}
-          {view === 'LIST' && <ListView users={users} performances={performances} />}
+          {view === 'CALENDAR' && <CalendarView user={user} users={users} performances={performances} onClick={onClick} />}
+          {view === 'LIST' && <ListView users={users} performances={performances} user={user} />}
         </>
       )}
     </div>

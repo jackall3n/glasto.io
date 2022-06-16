@@ -87,7 +87,7 @@ export function Home({ group }: Props) {
 
           {view === 'CALENDAR' &&
               <CalendarView user={user} users={users} performances={performances} onClick={onClick} />}
-          {view === 'LIST' && <ListView users={users} performances={performances} />}
+          {view === 'LIST' && <ListView users={users} performances={performances} user={user} />}
         </>
       )}
     </div>
