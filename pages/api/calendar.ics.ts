@@ -2,17 +2,21 @@ import { EventAttributes } from "ics";
 
 import admin from 'firebase-admin';
 
-import credentials from '../../credentials.json';
 import { getPerformances } from "./performances";
 import { createEvents, toDateArray } from '../../utils/events';
 import { NextApiRequest } from "next";
-import { differenceInMinutes } from "date-fns";
 import { startCase } from "lodash";
 
-console.log(credentials);
+console.log({
+  privateKey: process.env.GOOGLE_PRIVATE_KEY,
+  clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
+})
 
 const app = admin.apps[0] ?? admin.initializeApp({
-  credential: admin.credential.cert(credentials as any)
+  credential: admin.credential.cert({
+    privateKey: process.env.GOOGLE_PRIVATE_KEY,
+    clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
+  })
 });
 
 const db = admin.firestore(app);
