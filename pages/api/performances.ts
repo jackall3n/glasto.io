@@ -19,7 +19,7 @@ const DAYS = [
 ];
 
 export async function getPerformances() {
-  const cached = cache.get('performances1');
+  const cached = cache.get('performances');
 
   if (cached) {
     console.log("cached")
