@@ -21,7 +21,7 @@ export default async function redirect(request: NextApiRequest, response: NextAp
 
     const { data } = await axios.post('https://accounts.spotify.com/api/token', qs.stringify({
       code,
-      redirect_uri: `${process.env.VERCEL_URL}/spotify/redirect`,
+      redirect_uri: `${process.env.SPOTIFY_REDIRECT ?? process.env.VERCEL_URL}/spotify/redirect`,
       grant_type: 'authorization_code'
     }), {
       auth: {
