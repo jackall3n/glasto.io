@@ -1,9 +1,9 @@
 import { getApps, initializeApp } from "firebase/app";
 
 const config = {
-  projectId: 'glasto-io',
-  authDomain: "glasto-io.firebaseapp.com",
-  apiKey: 'AIzaSyC01tM71IqRQ1xK324PH8bWLRJcmYiEdzQ'
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
 }
 
 const apps = getApps();

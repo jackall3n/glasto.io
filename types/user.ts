@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase/firestore";
+import { DocumentReference, Timestamp } from "firebase/firestore";
 
 export interface IUser {
   id: string;
@@ -6,6 +6,7 @@ export interface IUser {
   photoURL: string | null;
   displayName: string | null;
   groups?: string[]
+  spotify?: DocumentReference;
 }
 
 export interface IGroup {

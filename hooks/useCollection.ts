@@ -8,14 +8,27 @@ type Base<T> = {
   id: string;
   ref: DocumentReference<T>
 }
-type TDecorated<T> = T & Base<T>;
+export type TDecorated<T> = T & Base<T>;
 
-export function useCollection<T>(name: string, where?: QueryConstraint) {
+export function useCollection<T>(name: string | Array<any>, where?: QueryConstraint, map?: (data: any) => T) {
   const [data, setData] = useState<TDecorated<T>[]>([]);
 
-  const col = useMemo(() => collection(db, name) as CollectionReference<T>, [name]);
+  const path = (Array.isArray(name) ? name : [name]).join('/');
+  const invalid = !name || (Array.isArray(name) && name.some(path => !Boolean(path)));
+
+  const col = useMemo(() => {
+    if (invalid) {
+      return undefined;
+    }
+
+    return collection(db, path) as CollectionReference<T>
+  }, [path, invalid]);
 
   useEffect(() => {
+    if (!col) {
+      return;
+    }
+
     const q = where ? query(col, where) : query(col);
 
     return onSnapshot(q, snapshot => {
@@ -28,10 +41,12 @@ export function useCollection<T>(name: string, where?: QueryConstraint) {
           switch (change.type) {
             case "modified":
             case "added": {
+              const data = change.doc.data();
+
               const datum = {
                 id: change.doc.id,
                 ref: change.doc.ref,
-                ...change.doc.data()
+                ...(map ? map(data) : data)
               }
 
               if (index === -1) {
@@ -48,10 +63,12 @@ export function useCollection<T>(name: string, where?: QueryConstraint) {
           }
         }
 
+        console.log(path, updated.length);
+
         return updated;
       })
     })
-  }, [col, where])
+  }, [col, where, path])
 
   return [data, col] as const;
 }

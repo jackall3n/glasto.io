@@ -9,14 +9,17 @@ type Base<T> = {
 
 type TDecorated<T> = T & Base<T>;
 
-export function useDocument<T>(collection: string, id: string) {
+export function useDocument<T>(path: string | any[], id: string) {
+  const _path = (Array.isArray(path) ? path : [path]).join('/');
+  const invalid = !path || (Array.isArray(path) && path.some(path => !Boolean(path))) || !id;
+
   const ref = useMemo(() => {
-    if (!id) {
+    if (invalid) {
       return undefined;
     }
 
-    return doc(db, collection, id) as DocumentReference<T>;
-  }, [collection, id]);
+    return doc(db, _path, id) as DocumentReference<T>;
+  }, [_path, invalid, id]);
 
   const [isValidating, setIsValidating] = useState(true);
   const [data, setData] = useState<TDecorated<T>>();

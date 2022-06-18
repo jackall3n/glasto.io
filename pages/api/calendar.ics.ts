@@ -1,25 +1,11 @@
 import { EventAttributes } from "ics";
 
-import admin from 'firebase-admin';
-
 import { getPerformances } from "./performances";
 import { createEvents, toDateArray } from '../../utils/events';
 import { NextApiRequest } from "next";
 import { startCase } from "lodash";
+import admin from "../../firebase/admin";
 
-console.log({
-  privateKey: process.env.GOOGLE_PRIVATE_KEY,
-  clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
-})
-
-const app = admin.apps[0] ?? admin.initializeApp({
-  credential: admin.credential.cert({
-    privateKey: process.env.GOOGLE_PRIVATE_KEY,
-    clientEmail: process.env.GOOGLE_CLIENT_EMAIL,
-  })
-});
-
-const db = admin.firestore(app);
 
 export default async function performances(request: NextApiRequest, response) {
   const performances = await getPerformances();
@@ -34,7 +20,7 @@ export default async function performances(request: NextApiRequest, response) {
   try {
 
 
-    const ref = db.doc(`users/${id}`)
+    const ref = admin.firestore().doc(`users/${id}`)
     const doc = await ref.get();
     const data = doc?.data();
     const choices = data?.choices ?? [];
