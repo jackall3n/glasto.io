@@ -106,7 +106,7 @@ export default function ListView({ performances, users, user }) {
                       })}
                     </div>
 
-                    <div className="ml-1 text-[11px]">
+                    <div className="ml-1 text-[11px] whitespace-nowrap text-ellipsis overflow-hidden">
                       {users.filter(user => user.choices?.includes(performance.id)).map(({ displayName }) => displayName?.split(' ')[0]).filter(Boolean).join(', ')}
                     </div>
                   </div>
