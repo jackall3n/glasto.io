@@ -20,7 +20,7 @@ const HOUR_WIDTH = 240;
 const BLOCK_WIDTH = HOUR_WIDTH / 4;
 
 const DAYS = [
-  'WEDNESDAY',
+  // 'WEDNESDAY',
   'THURSDAY',
   'FRIDAY',
   'SATURDAY',
