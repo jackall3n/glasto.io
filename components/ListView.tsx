@@ -17,10 +17,9 @@ export default function ListView({ performances, users, user }) {
       }
 
       return true;
-    })
-    .filter(p => isAfter(p.end, addHours(new Date(), -2)));
+    });
 
-    const mapped = filtered.map(id => performances.find((p) => p.id === id)).filter(Boolean);
+    const mapped = filtered.map(id => performances.find((p) => p.id === id)).filter(Boolean).filter(p => isAfter(p.end, addHours(new Date(), -2)));
 
     const ordered = orderBy(mapped.filter(performance => {
       return !filter || performance.name.toLowerCase().includes(filter.toLowerCase())
