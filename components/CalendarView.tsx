@@ -11,6 +11,7 @@ import {
   max,
   min,
   startOfHour,
+  isAfter
 } from 'date-fns';
 import { groupBy, orderBy, startCase, uniq } from 'lodash';
 import classnames from 'classnames';
@@ -61,7 +62,8 @@ export function CalendarView({ performances, user, users, onClick }) {
 
         return true;
       })
-      .filter(p => p.blocks > 0);
+      .filter(p => p.blocks > 0)
+      .filter(p => isAfter(p.end, addHours(new Date(), -2)));
 
     const first = min(filtered.map(({ start }) => startOfHour(start)));
     const last = max(filtered.map(({ end }) => endOfHour(end)));

@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, addHours, isAfter } from "date-fns";
 import React, { useMemo, useState } from "react";
 import { groupBy, orderBy, uniq } from "lodash";
 import copy from 'copy-to-clipboard';
@@ -18,6 +18,7 @@ export default function ListView({ performances, users, user }) {
 
       return true;
     })
+    .filter(p => isAfter(p.end, addHours(new Date(), -2)));
 
     const mapped = filtered.map(id => performances.find((p) => p.id === id)).filter(Boolean);
 
