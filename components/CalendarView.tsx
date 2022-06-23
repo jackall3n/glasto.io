@@ -34,7 +34,7 @@ export function CalendarView({ performances, user, users, onClick }) {
 
   const friends = useMemo(() => users.filter(u => u.id !== user?.id), [users, user])
 
-  const [selectedDay, setDay] = useState('FRIDAY');
+  const [selectedDay, setDay] = useState(DAYS[0]);
 
   const selected = useMemo(() => uniq(users.map(({ choices }) => choices).flat(Infinity)), [users])
 
