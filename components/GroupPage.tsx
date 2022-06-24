@@ -9,7 +9,7 @@ import { TDecorated } from "../hooks/useCollection";
 import { useAuth } from "../providers/AuthProvider";
 import { usePerformances } from "../hooks/usePerformances";
 import { useDocument } from "../hooks/useDocument";
-import { arrayUnion } from 'firebase/firestore';
+import { arrayUnion, Timestamp } from 'firebase/firestore';
 
 interface Props {
   group?: IGroup
@@ -33,6 +33,7 @@ export function GroupPage({ users, group }: Props) {
       updateUser({
         photoURL: authUser.photoURL,
         displayName: authUser.displayName,
+        lastSeen: Timestamp.fromDate(new Date())
       })
     }
   }, [authUser]);
