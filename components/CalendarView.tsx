@@ -292,8 +292,8 @@ export function CalendarView({ performances, user, users, onClick }) {
                 ))}
               </div>
 
-              {isSameDay(first, new Date()) && (
-                <div className="w-0.5 bg-blue-500 absolute top-0 bottom-0"
+              {isSameDay(first, addHours(new Date(), 6)) && (
+                <div className="w-0.5 bg-blue-500 absolute top-0 bottom-0 left-0"
                      style={{ marginLeft: `${Math.abs(differenceInMinutes(new Date(), first) / 5) * BLOCK_WIDTH}px` }}>
                   <div className="absolute rounded-full bg-blue-500 w-2 h-2 -left-[3px] -top-2 z-20" />
                 </div>
