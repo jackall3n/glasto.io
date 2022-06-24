@@ -5,7 +5,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 
 import { useGeolocated } from "react-geolocated";
-css');
 
 const Map = ReactMapboxGl({
   accessToken:
