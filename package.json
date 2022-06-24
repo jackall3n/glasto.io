@@ -30,7 +30,9 @@
     "react": "18.1.0",
     "react-dom": "18.1.0",
     "swr": "^1.3.0",
-    "react-geolocated" : "4.0.3"
+    "react-geolocated" : "4.0.3",
+    "react-mapbox-gl": "latest",
+    "mapbox-gl": "latest"
   },
   "devDependencies": {
     "@types/memory-cache": "^0.2.2",

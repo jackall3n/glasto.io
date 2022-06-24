@@ -9,6 +9,10 @@ function CustomApp({ Component, pageProps }: AppProps) {
     <AuthProvider>
       <Head>
         <title>Home | glasto.io</title>
+        <link
+      href="https://api.mapbox.com/mapbox-gl-js/v1.10.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
       </Head>
       <main className="app">
         <Component {...pageProps} />
