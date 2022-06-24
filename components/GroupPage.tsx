@@ -123,10 +123,10 @@ export function GroupPage({ users, group }: Props) {
 
       {!isLoading && (
         <>
-          <div className="grid grid-cols-2">
+          <div className="grid grid-cols-3">
             <button onClick={() => setView("CALENDAR")} className="flex items-center justify-center">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              <span>Calendar</span>
+                          <span>Calendar</span>
+              <CalendarIcon className="w-4 h-4 ml-2" />
             </button>
             <button onClick={() => setView("LIST")} className="flex items-center justify-center">
               <span>List</span>
