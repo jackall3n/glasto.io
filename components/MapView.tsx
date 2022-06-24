@@ -4,7 +4,10 @@ import { groupBy, orderBy, uniq } from "lodash";
 import copy from 'copy-to-clipboard';
 import { CalendarIcon } from "@heroicons/react/solid";
 
+import { useGeolocated } from "react-geolocated";
+
 export default function MapView({  }) {
+  const location = useGeolocated()
   
 
   return (
