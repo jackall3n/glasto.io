@@ -22,7 +22,7 @@ export default async function performances(request: NextApiRequest, response) {
 
     const ref = admin.firestore().collection(`users`).where('groups', 'array-contains', id)
     const snapshots = await ref.get();
-    const users = snapshots.map(s => s.doc.data())
+    const users = snapshot.docs.map(s => s.data())
     const groupChoices = users.map(u => u.choices ?? []).flat(10);
     const choices = uniq(groupChoices);
 
