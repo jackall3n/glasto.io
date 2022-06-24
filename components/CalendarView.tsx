@@ -178,7 +178,7 @@ export function CalendarView({ performances, user, users, onClick }) {
     }
     
     setTimeout(() => onScroll(ref.current));
-  }, [ref.current]);
+  }, [ref.current, selectedDay]);
 
   function onSetDay(day: string) {
     // ref.current.scrollTo(0, 0)
