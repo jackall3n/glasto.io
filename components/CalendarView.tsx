@@ -197,10 +197,10 @@ export function CalendarView({ performances, user, users, onClick }) {
         </label>
       </div>
       <div className="grid grid-flow-col gap-2 sm:gap-3 py-2 px-2">
-        {DAYS.filter((d) => days.includes(d)).map((day: string) => (
+        {DAYS.filter((d) => days.includes(d)).map((day: string, index) => (
           <button
             key={day}
-            className={classnames('btn', { selected: selectedDay === day })}
+            className={classnames('btn', { selected: selectedDay === day || (!day && index == 0 })}
             onClick={() => onSetDay(day)}
           >
             <span className="block sm:hidden">{day.substring(0, 3)}</span>
@@ -292,7 +292,7 @@ export function CalendarView({ performances, user, users, onClick }) {
                 ))}
               </div>
 
-              {isSameDay(first, addHours(new Date(), 6)) && (
+              {isSameDay(first, addHours(new Date(), -6)) && (
                 <div className="w-0.5 bg-blue-500 absolute top-0 bottom-0 left-0"
                      style={{ marginLeft: `${Math.abs(differenceInMinutes(new Date(), first) / 5) * BLOCK_WIDTH}px` }}>
                   <div className="absolute rounded-full bg-blue-500 w-2 h-2 -left-[3px] -top-2 z-20" />
