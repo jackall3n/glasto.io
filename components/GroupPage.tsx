@@ -51,6 +51,7 @@ export function GroupPage({ users, group }: Props) {
 
     const update: Partial<IUser> = {
       choices: orderBy(ids),
+      lastSeen: Timestamp.fromDate(new Date())
     }
 
     if (group) {
