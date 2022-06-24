@@ -202,7 +202,7 @@ export function CalendarView({ performances, user, users, onClick }) {
         {days.map((day: string, index) => (
           <button
             key={day}
-            className={classnames('btn', { selected: day === (selectedDay === days[0] )})}
+            className={classnames('btn', { selected: day === (selectedDay ?? days[0] )})}
             onClick={() => onSetDay(day)}
           >
             <span className="block sm:hidden">{day.substring(0, 3)}</span>
