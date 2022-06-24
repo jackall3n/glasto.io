@@ -22,7 +22,8 @@ export default async function performances(request: NextApiRequest, response) {
 
     const ref = admin.firestore().collection(`users`).where('groups', 'array-contains', id)
     const snapshots = await ref.get();
-    const groupChoices = snapshots.map(s => s.doc.data().choices ?? []).flat(10);
+    const users = snapshots.map(s => s.doc.data())
+    const groupChoices = users.map(u => u.choices ?? []).flat(10);
     const choices = uniq(groupChoices);
 
     const now = new Date();
@@ -33,9 +34,11 @@ export default async function performances(request: NextApiRequest, response) {
       const [link] = p.link?.split(' ') ?? [];
 
       const url = link.trim().startsWith('http') ? link.trim() : undefined;
+      
+      const u = users.filter(u => u.choices?.includes(p.id));
 
       return {
-        title: startCase(p.name.toLowerCase()),
+        title: startCase(p.name.toLowerCase()) + " - " + u.map(u => u.displayName?.split(" ")[0]).join(", "),
         start: toDateArray(p.start, true),
         end: toDateArray(p.end, true),
         calName: `Glastonbury 🎵 - ${id}`,
