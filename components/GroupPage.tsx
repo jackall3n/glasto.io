@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { orderBy } from 'lodash';
-import { CalendarIcon, ViewListIcon } from '@heroicons/react/outline';
+import { CalendarIcon, ViewListIcon, MapIcon } from '@heroicons/react/outline';
 import ListView from '../components/ListView';
+import MapView from "../components/MapView";
 import CalendarView from "../components/CalendarView";
 import { IGroup, IUser } from '../types/user';
 import { TDecorated } from "../hooks/useCollection";
@@ -131,11 +132,17 @@ export function GroupPage({ users, group }: Props) {
               <span>List</span>
               <ViewListIcon className="w-4 h-4 ml-2" />
             </button>
+            <button onClick={() => setView("MAP")} className="flex items-center justify-center">
+              <span>Map</span>
+              <MapIcon className="w-4 h-4 ml-2" />
+            </button>
           </div>
 
           {view === 'CALENDAR' &&
               <CalendarView user={user} users={users} performances={performances} onClick={onClick} />}
           {view === 'LIST' && <ListView users={users} performances={performances} user={user} />}
+          
+          {view === 'MAP' && <MapView />}
         </>
       )}
     </div>
