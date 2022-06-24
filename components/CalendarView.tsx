@@ -36,7 +36,7 @@ export function CalendarView({ performances, user, users, onClick }) {
 
   const [selectedDay, setDay] = useState(DAYS[0]);
 
-  const selected = useMemo(() => uniq(users.map(({ choices }) => choices).flat(Infinity)), [users])
+  const selected = useMemo(() => uniq(users.map(({ choices }) => choices).flat(Infinity)), [users]) 
 
   const {
     first,
@@ -48,8 +48,10 @@ export function CalendarView({ performances, user, users, onClick }) {
     days,
     mapped
   } = useMemo(() => {
+  const days = Array.from(new Set(performances.filter(p => isAfter(p.start, addHours(new Date(), -4))).map(({ day }) => day)));
+  
     const filtered = performances
-      .filter(({ day }) => day === selectedDay)
+      .filter(({ day }) => day === (selectedDay ?? days[0]))
       .filter(({ name }) => (!filter || name.toLowerCase().includes(filter?.toLowerCase())))
       .filter(({ id }) => {
         if (showFilter === 'ONLY_MINE') {
@@ -79,7 +81,7 @@ export function CalendarView({ performances, user, users, onClick }) {
 
     const stages = Object.entries(groupBy(mapped, 'stage'));
 
-    const days = Array.from(new Set(performances.map(({ day }) => day)));
+    
 
     return {
       first,
@@ -197,10 +199,10 @@ export function CalendarView({ performances, user, users, onClick }) {
         </label>
       </div>
       <div className="grid grid-flow-col gap-2 sm:gap-3 py-2 px-2">
-        {DAYS.filter((d) => days.includes(d)).map((day: string, index) => (
+        {days.map((day: string, index) => (
           <button
             key={day}
-            className={classnames('btn', { selected: selectedDay === day || (!day && index == 0 })}
+            className={classnames('btn', { selected: selectedDay === (day || days[0] })}
             onClick={() => onSetDay(day)}
           >
             <span className="block sm:hidden">{day.substring(0, 3)}</span>
