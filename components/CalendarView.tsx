@@ -173,13 +173,20 @@ export function CalendarView({ performances, user, users, onClick }) {
   }
 
   useEffect(() => {
-    onScroll(ref.current)
+    if (showNow) {
+       ref.current.scrollTo(nowMargin - (target.offsetWith / 2), 0)
+    }
+    
+    setTimeout(() => onScroll(ref.current));
   }, [ref.current]);
 
   function onSetDay(day: string) {
     // ref.current.scrollTo(0, 0)
     setDay(day)
   }
+  
+  const nowMargin = Math.abs(differenceInMinutes(new Date(), first) / 5) * (BLOCK_WIDTH / 3);
+  const showNow = isSameDay(first, addHours(new Date(), -6));
 
   return (
     <>
@@ -294,9 +301,9 @@ export function CalendarView({ performances, user, users, onClick }) {
                 ))}
               </div>
 
-              {isSameDay(first, addHours(new Date(), -6)) && (
+              {showNow && (
                 <div className="w-0.5 bg-blue-500 absolute top-0 bottom-0 left-0"
-                     style={{ marginLeft: `${Math.abs(differenceInMinutes(new Date(), first) / 5) * (BLOCK_WIDTH / 3)}px` }}>
+                     style={{ marginLeft: `${nowMargin}px` }}>
                   <div className="absolute rounded-full bg-blue-500 w-2 h-2 -left-[3px] -top-2 z-20" />
                 </div>
               )}
