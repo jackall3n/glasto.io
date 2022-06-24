@@ -31,7 +31,7 @@ export default async function performances(request: NextApiRequest, response) {
     const filtered = performances.filter(p => choices.includes(p.id));
 
     const events: EventAttributes[] = filtered.map(p => {
-      const [link] = p.link?.split(' ') ?? [];
+      const [link] = p.link?.split(' ') ?? [""];
 
       const url = link.trim().startsWith('http') ? link.trim() : undefined;
       
