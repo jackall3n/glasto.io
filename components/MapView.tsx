@@ -13,10 +13,13 @@ const Map = ReactMapboxGl({
 
 
 export default function MapView({  }) {
-  const { coords } = useGeolocated()
+  const location = useGeolocated()
+  const { coords } = location;
+  
+  console.log({ location }); 
   
   return (
-    <div className="container mx-auto max-w-[750px]">Coming Soon 😋
+    <div className="container mx-auto max-w-[750px]">
     <Map
   style="mapbox://styles/mapbox/streets-v9"
   containerStyle={{
@@ -29,7 +32,9 @@ export default function MapView({  }) {
     <Feature coordinates={[coords.latitude, coords.longitude]} />
   </Layer>
   )}
-</Map>;
+</Map>
+
+{JSON.stringify(location)}
                              </div>
   )
 }
