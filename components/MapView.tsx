@@ -13,7 +13,7 @@ const Map = ReactMapboxGl({
 
 
 export default function MapView({  }) {
-  const location = useGeolocated()
+  const location = useGeolocated({ watchPosition: true} )
   const { coords } = location;
   
   console.log({ location }); 
