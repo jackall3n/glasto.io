@@ -19,7 +19,7 @@ const DAYS = [
 ];
 
 export async function getPerformances() {
-  const cached = cache.get('performances');
+  const cached = cache.get('performances-v2');
 
   if (cached) {
     console.log("cached")
@@ -94,10 +94,6 @@ export async function getPerformances() {
             .join(':')
             .replace(/ /gim, '_');
 
-          if (name === 'TBA') {
-            return;
-          }
-
           performances.push({
             id,
             name,
@@ -117,7 +113,7 @@ export async function getPerformances() {
 
   const timeout = Math.abs(differenceInMilliseconds(new Date(), addHours(new Date(), 6)));
 
-  cache.put('performances', results, timeout);
+  cache.put('performances-v2', results, timeout);
 
   // sync(results);
 
@@ -129,7 +125,7 @@ export default async function performances(request, response) {
 
   response.json(performances);
 
-  return;
+  // return;
 
   try {
 
