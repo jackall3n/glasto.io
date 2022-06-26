@@ -6,7 +6,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { useCollection } from "../hooks/useCollection";
 import { useDocument } from "../hooks/useDocument";
 import { IUser } from '../types/user';
-
+import { doc, setDoc } from "firebase/firestore"; 
 
 import { useGeolocated } from "react-geolocated";
 
@@ -43,7 +43,7 @@ export default function MapView({  }) {
      })
      
      if (col) { 
-     col.doc(timestamp).set({ coordinates: coords }).then()
+     setDoc(doc(col, String(timestamp)), { coordinates: coords }).then()
      }
     
     
