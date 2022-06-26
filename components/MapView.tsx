@@ -19,7 +19,7 @@ const Map = ReactMapboxGl({
 export default function MapView({  }) {
   const [authUser, login] = useAuth();
 
-  const [user, loading, doc, updateUser] = useDocument<IUser>("users", authUser?.uid);
+  const [user, loading, , updateUser] = useDocument<IUser>("users", authUser?.uid);
 
   const [, col] = useCollection<any>(["users", authUser?.uid, "locations"]); 
   
