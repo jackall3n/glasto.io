@@ -174,7 +174,10 @@ export function CalendarView({ performances, user, users, onClick }) {
 
   useEffect(() => {
     if (showNow) {
-       ref.current.scrollTo(nowMargin - (ref.current.offsetWidth / 2), 0)
+    const width = ref.current.offsetWidth;
+    const { left } = ref.current.getBoundingClientRect();
+    const scroll = nowMargin - (width / 2) - left;
+       ref.current.scrollTo(scroll, 0)
     }
     
     setTimeout(() => onScroll(ref.current));
