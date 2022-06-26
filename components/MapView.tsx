@@ -29,26 +29,26 @@ export default function MapView({  }) {
   console.log({ location }); 
   
   const zoom = useMemo(() => [17], []);
-  const center = useMemo(() => {
+  const location = useMemo(() => {
   return coords ? [ coords.longitude, coords.latitude] : undefined
    }, [coords?.longitude, coords?.latitude]);
    
    useEffect(() => { 
-     if (!coords || !authUser) {
+     if (!location || !authUser) {
       return
      }
    
      updateUser({ 
-       location: [coords.longitude, coords.latitude]
+       location
      })
      
      if (col) { 
      const ref = doc(col, String(timestamp))
-     setDoc(ref, { coordinates: coords })
+     setDoc(ref, { coordinates: location })
      }
     
     
-   }, [coords?.longitude, coords?.latitude]);
+   }, [location]);
   
   return (
     <div className="container mx-auto max-w-[750px]">
@@ -59,11 +59,11 @@ export default function MapView({  }) {
     width: '100vw'
   }}
   zoom={zoom}
-  center={center}
+  center={location}
 >
 {coords && (
   <Layer type="symbol" id="marker" layout={{ 'icon-image': 'circle-15' }}>
-    <Feature coordinates={center} />
+    <Feature coordinates={location} />
   </Layer>
   )}
 </Map>
