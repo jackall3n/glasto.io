@@ -18,7 +18,7 @@ export default function MapView({  }) {
   
   console.log({ location }); 
   
-  const zoom = useMemo(() => [17],   
+  const zoom = useMemo(() => [17], []);
   const center = useMemo(() => {
   return coords ? [ coords.longitude, coords.latitude] : undefined
    }, [coords?.longitude, coords?.latitude]);
