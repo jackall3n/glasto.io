@@ -37,19 +37,21 @@ export default function MapView({  }) {
      if (!location || !authUser) {
       return
      }
-   
-     updateUser({ 
-       location: {
+     
+     const data = {
           timestamp: serverTimestamp(),
           longitude: location[0],
           latitude: location[1],
        }
+   
+     updateUser({ 
+       location: data
      })
      
-     /* if (col) { 
-     const ref = doc(col, String(timestamp))
-     setDoc(ref, { coordinates: location })
-     }*/
+     if (col) { 
+       const ref = doc(col, String(timestamp))
+       setDoc(ref, data)
+     }
     
     
    }, [location]);
