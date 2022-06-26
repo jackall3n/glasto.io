@@ -26,7 +26,7 @@ export default function MapView({  }) {
     height: '100vh',
     width: '100vw'
   }}
-  zoom={[5]}
+  zoom={[13]}
   center={coords ? [ coords.longitude, coords.latitude] : undefined }
 >
 {coords && (
