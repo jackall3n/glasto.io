@@ -8,6 +8,7 @@ export interface IUser {
   groups?: string[]
   spotify?: DocumentReference;
   lastSeen?: Timestamp;
+  location?: number[]
 }
 
 export interface IGroup {
