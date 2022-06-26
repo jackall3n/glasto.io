@@ -42,10 +42,10 @@ export default function MapView({  }) {
        location
      })
      
-     if (col) { 
+     /* if (col) { 
      const ref = doc(col, String(timestamp))
      setDoc(ref, { coordinates: location })
-     }
+     }*/
     
     
    }, [location]);
