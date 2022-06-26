@@ -2,6 +2,10 @@
 import React, { useMemo, useState } from "react";
 import ReactMapboxGl, { Layer, Feature } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useAuth } from "../providers/AuthProvider";
+import { useCollection } from "../hooks/useCollection";
+import { useDocument } from "../hooks/useDocument";
+import { IUser } from '../types/user';
 
 
 import { useGeolocated } from "react-geolocated";
