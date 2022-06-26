@@ -43,7 +43,8 @@ export default function MapView({  }) {
      })
      
      if (col) { 
-     setDoc(doc(col, String(timestamp)), { coordinates: coords }).then()
+     const ref = doc(col, String(timestamp))
+     setDoc(ref, { coordinates: coords })
      }
     
     
