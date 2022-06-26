@@ -18,6 +18,8 @@ export default function MapView({  }) {
   
   console.log({ location }); 
   
+  const zoom = useMemo(() => [17]);
+  
   return (
     <div className="container mx-auto max-w-[750px]">
     <Map
@@ -26,7 +28,7 @@ export default function MapView({  }) {
     height: '100vh',
     width: '100vw'
   }}
-  zoom={[17]}
+  zoom={zoom}
   center={coords ? [ coords.longitude, coords.latitude] : undefined }
 >
 {coords && (
