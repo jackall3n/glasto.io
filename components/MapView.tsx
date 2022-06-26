@@ -26,10 +26,11 @@ export default function MapView({  }) {
     height: '100vh',
     width: '100vw'
   }}
+  center={coords ? [ coords.longitude, coords.latitude] : undefined }
 >
 {coords && (
   <Layer type="symbol" id="marker" layout={{ 'icon-image': 'marker-15' }}>
-    <Feature coordinates={[coords.latitude, coords.longitude]} />
+    <Feature coordinates={[ coords.longitude, coords.latitude]} />
   </Layer>
   )}
 </Map>
