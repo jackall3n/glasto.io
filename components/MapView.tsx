@@ -23,8 +23,8 @@ export default function MapView({  }) {
 
   const [, col] = useCollection<any>(["users", authUser?.uid, "locations"]); 
   
-  const location = useGeolocated({ watchPosition: true} )
-  const { coords, timestamp } = location;
+  const geolocation = useGeolocated({ watchPosition: true} )
+  const { coords, timestamp } = geolocation;
   
   console.log({ location }); 
   
