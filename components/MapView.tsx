@@ -30,7 +30,7 @@ export default function MapView({  }) {
   
   const zoom = useMemo(() => [17], []);
   const location = useMemo(() => {
-  return coords ? [ coords.longitude, coords.latitude] : undefined
+  return coords ? [ coords.longitude, coords.latitude] as const: undefined
    }, [coords?.longitude, coords?.latitude]);
    
    useEffect(() => { 
