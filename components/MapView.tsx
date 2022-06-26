@@ -6,7 +6,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { useCollection } from "../hooks/useCollection";
 import { useDocument } from "../hooks/useDocument";
 import { IUser } from '../types/user';
-import { doc, setDoc } from "firebase/firestore"; 
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
 
 import { useGeolocated } from "react-geolocated";
 
@@ -39,7 +39,11 @@ export default function MapView({  }) {
      }
    
      updateUser({ 
-       location
+       location: {
+          timestamp: serverTimestamp(),
+          longitude: location[0],
+          latitude: location[1],
+       }
      })
      
      /* if (col) { 
