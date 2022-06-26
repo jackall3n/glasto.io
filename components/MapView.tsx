@@ -26,7 +26,7 @@ export default function MapView({  }) {
   const geolocation = useGeolocated({ watchPosition: true} )
   const { coords, timestamp } = geolocation;
   
-  console.log({ location }); 
+  console.log({ geolocation }); 
   
   const zoom = useMemo(() => [17], []);
   const location = useMemo(() => {
