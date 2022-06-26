@@ -46,7 +46,7 @@ export default function MapView({  }) {
    
      updateUser({ 
        location: data
-     })
+     } as any);
      
      if (col) { 
        const ref = doc(col, String(timestamp))
