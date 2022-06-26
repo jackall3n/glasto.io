@@ -18,7 +18,8 @@ export default function MapView({  }) {
   
   console.log({ location }); 
   
-  const zoom = useMemo(() => [17]);
+  const zoom = useMemo(() => [17],   
+  const center = useMemo(() => coords ? [ coords.longitude, coords.latitude] : undefined, [coords?.longitude, coords?.latitude]);
   
   return (
     <div className="container mx-auto max-w-[750px]">
@@ -29,11 +30,11 @@ export default function MapView({  }) {
     width: '100vw'
   }}
   zoom={zoom}
-  center={coords ? [ coords.longitude, coords.latitude] : undefined }
+  center={center}
 >
 {coords && (
   <Layer type="symbol" id="marker" layout={{ 'icon-image': 'circle-15' }}>
-    <Feature coordinates={[coords.longitude, coords.latitude]} />
+    <Feature coordinates={center} />
   </Layer>
   )}
 </Map>
