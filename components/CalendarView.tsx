@@ -176,7 +176,7 @@ export function CalendarView({ performances, user, users, onClick }) {
     if (showNow) {
     const width = ref.current.offsetWidth;
     const { left } = ref.current.getBoundingClientRect();
-    const scroll = nowMargin - (width / 2) - left;
+    const scroll = (nowMargin - (width / 2)) +  left;
        ref.current.scrollTo(scroll, 0)
     }
     
