@@ -13,6 +13,12 @@ const Map = ReactMapboxGl({
 
 
 export default function MapView({  }) {
+  const [authUser, login] = useAuth();
+
+  const [user, loading, doc, updateUser] = useDocument<IUser>("users", authUser?.uid);
+
+  const [, col] = useCollection<any>(["users", authUser?.uid, "locations"]); 
+  
   const location = useGeolocated({ watchPosition: true} )
   const { coords } = location;
   
@@ -21,6 +27,22 @@ export default function MapView({  }) {
   const zoom = useMemo(() => [17], []);
   const center = useMemo(() => {
   return coords ? [ coords.longitude, coords.latitude] : undefined
+   }, [coords?.longitude, coords?.latitude]);
+   
+   useEffect(() => { 
+     if (!coords || !authUser) {
+      return
+     }
+   
+     updateUser({ 
+       location: [coords.longitude, coords.latitude]
+     })
+     
+     if (col) { 
+     col.doc(timestamp).set({ coordinates: coords }).then()
+     }
+    
+    
    }, [coords?.longitude, coords?.latitude]);
   
   return (
