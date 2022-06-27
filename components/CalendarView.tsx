@@ -48,7 +48,7 @@ export function CalendarView({ performances, user, users, onClick }) {
     days,
     mapped
   } = useMemo(() => {
-  const days = Array.from(new Set(performances.filter(p => isAfter(p.start, addHours(new Date(), -4))).map(({ day }) => day)));
+  const days = Array.from(new Set(performances.map(({ day }) => day)));
   
     const filtered = performances
       .filter(({ day }) => day === (selectedDay ?? days[0]))
