@@ -213,7 +213,7 @@ export function CalendarView({ performances, user, users, onClick }) {
         </label>
       </div>
       <div className="grid grid-flow-col gap-2 sm:gap-3 py-2 px-2">
-        {days.map((day: string, index) => (
+        {DAYS.filter(d => days.includes(d)).map((day: string, index) => (
           <button
             key={day}
             className={classnames('btn', { selected: day === (selectedDay ?? days[0] )})}
