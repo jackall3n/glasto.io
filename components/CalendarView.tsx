@@ -65,7 +65,7 @@ export function CalendarView({ performances, user, users, onClick }) {
         return true;
       })
       .filter(p => p.blocks > 0)
-      .filter(p => isAfter(p.start, addHours(new Date(), -4)));
+      //.filter(p => isAfter(p.start, addHours(new Date(), -4)));
 
     const first = min(filtered.map(({ start }) => startOfHour(start)));
     const last = max(filtered.map(({ end }) => endOfHour(end)));
