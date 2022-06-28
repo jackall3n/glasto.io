@@ -1,80 +1,106 @@
-
-import React, { useMemo, useState, useEffect } from "react";
-import ReactMapboxGl, { Layer, Feature } from 'react-mapbox-gl';
+import React, { useEffect, useMemo } from "react";
+import ReactMapboxGl, { Feature, Layer } from 'react-mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useAuth } from "../providers/AuthProvider";
 import { useCollection } from "../hooks/useCollection";
 import { useDocument } from "../hooks/useDocument";
 import { IUser } from '../types/user';
-import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
+import { GeoPoint, serverTimestamp, Timestamp } from "firebase/firestore";
 
 import { useGeolocated } from "react-geolocated";
 
 const Map = ReactMapboxGl({
-  accessToken:
-    'pk.eyJ1IjoiZ2xhc3RvaW8iLCJhIjoiY2w0c29mdGY2MGlzaTNrcDhvd2YwNXhrNiJ9.I1OyrrdOMdR7Z0DLeqSvjw'
+  accessToken: 'pk.eyJ1IjoiZ2xhc3RvaW8iLCJhIjoiY2w0c29mdGY2MGlzaTNrcDhvd2YwNXhrNiJ9.I1OyrrdOMdR7Z0DLeqSvjw',
 });
 
+export default function MapView({ users }) {
+  const [authUser] = useAuth();
 
-export default function MapView({  }) {
-  const [authUser, login] = useAuth();
+  const [, , , updateUser] = useDocument<IUser>("users", authUser?.uid);
 
-  const [user, loading, , updateUser] = useDocument<IUser>("users", authUser?.uid);
+  const [locations, reference, { add }] = useCollection<any>(["users", authUser?.uid, "locations"]);
 
-  const [, col] = useCollection<any>(["users", authUser?.uid, "locations"]); 
-  
-  const geolocation = useGeolocated({ watchPosition: true} )
+  console.log(users);
+
+  const geolocation = useGeolocated({ watchPosition: true })
+
   const { coords, timestamp } = geolocation;
-  
-  console.log({ geolocation }); 
-  
-  const zoom = useMemo<[number]>(() => [17], []);
-  const location = useMemo<[number, number]>(() => {
-  return coords ? [ coords.longitude, coords.latitude] : undefined
-   }, [coords?.longitude, coords?.latitude]);
-   
-   useEffect(() => { 
-     if (!location || !authUser) {
-      return
-     }
-     
-     const data = {
-          timestamp: serverTimestamp(),
-          longitude: location[0],
-          latitude: location[1],
-       }
-   
-     updateUser({ 
-       location: data
-     } as any);
-     
-     if (col) { 
-       const ref = doc(col, String(timestamp))
-       setDoc(ref, data)
-     }
-    
-    
-   }, [location]);
-  
-  return (
-    <div className="container mx-auto max-w-[750px]">
-    <Map
-  style="mapbox://styles/mapbox/streets-v9"
-  containerStyle={{
-    height: '100vh',
-    width: '100vw'
-  }}
-  zoom={zoom}
-  center={location}
->
-{coords && (
-  <Layer type="symbol" id="marker" layout={{ 'icon-image': 'circle-15' }}>
-    <Feature coordinates={location} />
-  </Layer>
-  )}
-</Map>
 
-{JSON.stringify(location)}
-                             </div>
+  console.log({ geolocation });
+
+  const zoom = useMemo<[number]>(() => [17], []);
+
+  const location = useMemo(() => {
+    if (!coords) {
+      return undefined;
+    }
+
+    const { latitude, longitude } = coords;
+
+    return {
+      coords: [longitude, latitude] as [number, number],
+      geo: new GeoPoint(latitude, longitude)
+    }
+  }, [coords?.longitude, coords?.latitude]);
+
+  async function pingLocation() {
+    if (!location || !authUser) {
+      return
+    }
+
+    const data = {
+      timestamp: serverTimestamp() as Timestamp,
+      point: location.geo,
+    }
+
+    await updateUser({
+      location: data
+    });
+
+    if (reference) {
+      await add(timestamp, data);
+    }
+  }
+
+  useEffect(() => {
+    pingLocation().then()
+  }, [location]);
+
+  return (
+    <div className="min-h-[100vh] flex flex-col relative">
+      <div className="absolute top-5 left-5 z-50 bg-white p-2 rounded-md">
+        {JSON.stringify(location?.geo)}
+      </div>
+      <Map
+        style="mapbox://styles/mapbox/streets-v9"
+        className="flex-1"
+        zoom={zoom}
+        center={location?.coords}
+      >
+        {location && (
+          <Layer type="symbol" id="marker" layout={{ 'icon-image': 'cat' }}>
+            <Feature coordinates={location.coords} />
+          </Layer>
+        )}
+
+        {users.map(user => {
+          const { id, location } = user;
+
+          if (!location?.point) {
+            return <React.Fragment key={id} />
+          }
+
+          const { point } = location;
+
+          console.log()
+
+          return (
+            <Layer key={id} type="symbol" id="marker" layout={{ 'icon-image': 'cat' }}>
+              <Feature coordinates={[point.longitude, point.latitude]} />
+            </Layer>
+          )
+        })}
+      </Map>
+    </div>
   )
 }

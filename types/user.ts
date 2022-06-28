@@ -1,4 +1,4 @@
-import { DocumentReference, Timestamp } from "firebase/firestore";
+import { DocumentReference, GeoPoint, Timestamp } from "firebase/firestore";
 
 export interface IUser {
   id: string;
@@ -8,7 +8,10 @@ export interface IUser {
   groups?: string[]
   spotify?: DocumentReference;
   lastSeen?: Timestamp;
-  location?: number[]
+  location?: {
+    timestamp: Timestamp;
+    point: GeoPoint
+  }
 }
 
 export interface IGroup {

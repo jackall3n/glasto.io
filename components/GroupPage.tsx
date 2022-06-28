@@ -24,8 +24,6 @@ export function GroupPage({ users, group }: Props) {
   const [performances] = usePerformances();
 
   const [user, loading, doc, updateUser] = useDocument<IUser>("users", authUser?.uid);
-  // const [spotify] = useDocument<any>(["users", authUser?.uid, 'integrations'], 'spotify');
-  // console.log(spotify);
 
   const [view, setView] = useState('CALENDAR')
 
@@ -141,8 +139,8 @@ export function GroupPage({ users, group }: Props) {
           {view === 'CALENDAR' &&
               <CalendarView user={user} users={users} performances={performances} onClick={onClick} />}
           {view === 'LIST' && <ListView users={users} performances={performances} user={user} />}
-          
-          {view === 'MAP' && <MapView />}
+
+          {view === 'MAP' && <MapView users={users} />}
         </>
       )}
     </div>

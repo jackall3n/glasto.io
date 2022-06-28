@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { collection, CollectionReference, DocumentReference, onSnapshot, query } from "firebase/firestore";
+import {
+  collection,
+  CollectionReference,
+  doc,
+  DocumentReference,
+  onSnapshot,
+  query,
+  setDoc,
+  updateDoc
+} from "firebase/firestore";
 import { pullAt } from "lodash";
 import { db } from "../firebase/firestore";
 import { QueryConstraint } from "@firebase/firestore";
@@ -16,7 +25,7 @@ export function useCollection<T>(name: string | Array<any>, where?: QueryConstra
   const path = (Array.isArray(name) ? name : [name]).join('/');
   const invalid = !name || (Array.isArray(name) && name.some(path => !Boolean(path)));
 
-  const col = useMemo(() => {
+  const reference = useMemo(() => {
     if (invalid) {
       return undefined;
     }
@@ -25,11 +34,11 @@ export function useCollection<T>(name: string | Array<any>, where?: QueryConstra
   }, [path, invalid]);
 
   useEffect(() => {
-    if (!col) {
+    if (!reference) {
       return;
     }
 
-    const q = where ? query(col, where) : query(col);
+    const q = where ? query(reference, where) : query(reference);
 
     return onSnapshot(q, snapshot => {
       setData(data => {
@@ -68,7 +77,15 @@ export function useCollection<T>(name: string | Array<any>, where?: QueryConstra
         return updated;
       })
     })
-  }, [col, where, path])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reference, where, path])
 
-  return [data, col] as const;
+  const helpers = {
+    async add(id: string | number, data?: T) {
+      const ref = doc<T>(reference, String(id))
+      await setDoc(ref, data)
+    }
+  }
+
+  return [data, reference, helpers] as const;
 }
